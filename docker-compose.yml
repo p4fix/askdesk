@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: askdesk_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-askdesk_db}
+      POSTGRES_USER: ${DB_USER:-askdesk_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-askdesk_password}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-askdesk_user} -d ${DB_NAME:-askdesk_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: askdesk_backend
+    restart: always
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-askdesk_db}
+      - DB_USER=${DB_USER:-askdesk_user}
+      - DB_PASSWORD=${DB_PASSWORD:-askdesk_password}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-askdesk-dev-key-change-in-production}
+      - DEBUG=${DEBUG:-True}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend,0.0.0.0
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+
