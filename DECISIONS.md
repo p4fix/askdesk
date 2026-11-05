@@ -85,3 +85,38 @@ This document tracks foundational design choices, tradeoffs, alternatives consid
   - `MockEmbeddingService`: Generates deterministic, L2-normalized 1536-dimensional unit vectors derived from cryptographic SHA-256 digests and vocabulary token hashes.
   - `OpenAIEmbeddingService`: Production client targeting `text-embedding-3-small` using standard library `urllib` (zero third-party SDK overhead).
 * **Rationale**: Enables reliable, isolated SDET testing where identical inputs yield identical vectors and overlapping text tokens produce positive cosine similarity, without requiring API keys.
+
+---
+
+## Decision 008: Human-in-the-Loop RAG Architecture vs. Autonomous Direct Auto-Replies
+* **Date**: Phase 4
+* **Context**: Customer support platforms powered by Large Language Models can generate answers instantly, but autonomous dispatch poses high business and compliance risks (hallucinations, erroneous refund promises, brand liability).
+* **Options Considered**:
+  1. *Fully Autonomous Auto-Reply Bot*: Instantly sends AI-generated responses to tickets. High risk of incorrect customer promises.
+  2. *Human-in-the-Loop (HITL) Draft Lifecycle*: AI synthesizes an `AIDraftResponse` with confidence scoring and structured citations; a human support agent reviews, optionally edits, and accepts/rejects before dispatching to the ticket.
+* **Decision**: Adopted Human-in-the-Loop Draft Architecture with explicit review state transitions (`DRAFT_GENERATED` -> `ACCEPTED` / `REJECTED`).
+* **Rationale**:
+  - Provides a critical safety barrier against hallucinations while drastically accelerating agent productivity (from minutes drafting to seconds reviewing).
+  - Maintains full auditability: records `suggested_reply`, `final_edited_reply`, `reviewed_by`, and `reviewed_at`.
+  - When accepted, atomically creates a `TicketComment` on the ticket and updates ticket status from `OPEN` to `IN_PROGRESS`.
+
+---
+
+## Decision 009: Multi-Tenant Vector Similarity Retrieval with Dual-Database Fallback
+* **Date**: Phase 4
+* **Context**: Vector search queries must retrieve semantic chunks strictly within the authenticated user's organization tenant boundary.
+* **Problem**: In PostgreSQL with `pgvector`, vector distance queries use the `<=>` cosine distance operator (`CosineDistance`). In local SQLite test environments (`USE_SQLITE=True`), native vector distance SQL operators do not exist.
+* **Decision**: Built `VectorSearchService` with dual execution paths:
+  1. **PostgreSQL Path**: Applies an indexed HNSW cosine distance query (`CosineDistance('embedding', query_vector)`) strictly pre-filtered by `organization_id` and `document__status='PROCESSED'`.
+  2. **SQLite / SDET Fallback Path**: Pulls candidate chunks for the tenant and executes vectorized in-memory cosine similarity calculation in Python ($\frac{u \cdot v}{\|u\| \|v\|}$).
+* **Rationale**: Guarantees zero cross-tenant vector leakage at the database layer in production while allowing automated CI/CD test suites to execute instantaneously without requiring a live Postgres/pgvector instance.
+
+---
+
+## Decision 010: Bounded-Context Anti-Hallucination Prompting & Explicit Citation Traceability
+* **Date**: Phase 4
+* **Context**: Enterprise support agents require factual grounding they can verify before approving customer messages.
+* **Decision**: Implemented two synchronized mechanisms:
+  1. **Prompt Guardrail**: System prompt strictly restricts the LLM to provide answers *only* from the supplied context chunks. When context is missing or irrelevant, LLM emits a standardized fallback message: `"I do not have enough documentation to answer this question. Please reach out to our human support team for further assistance."`
+  2. **Structured Traceability (`AIDraftCitation`)**: Each draft response records foreign-key links to cited `DocumentChunk` records, along with `relevance_score`, `source_title`, `page_number`, and `cited_excerpt`.
+* **Rationale**: Eliminates guesswork for support agents by surfacing exact documentation sources and page numbers directly alongside AI draft replies.

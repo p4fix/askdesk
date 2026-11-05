@@ -3,6 +3,7 @@ import json
 import math
 import os
 import random
+import re
 import urllib.request
 from abc import ABC, abstractmethod
 from typing import List
@@ -36,20 +37,20 @@ class MockEmbeddingService(BaseEmbeddingService):
             # Zero vector for blank input
             return [0.0] * self.dimensions
 
-        # Base seed from full text digest
-        digest = hashlib.sha256(text.strip().lower().encode('utf-8')).hexdigest()
-        seed_int = int(digest[:16], 16)
-        rng = random.Random(seed_int)
-
-        # Generate base random vector
-        vec = [rng.gauss(0, 1) for _ in range(self.dimensions)]
-
-        # Vocabulary bias: add signal based on word tokens
-        words = text.lower().split()
+        # Vocabulary signal: Hash word tokens into vector dimensions
+        words = re.findall(r'\b\w+\b', text.lower())
+        vec = [0.0] * self.dimensions
         for word in set(words):
             word_hash = int(hashlib.md5(word.encode('utf-8')).hexdigest()[:8], 16)
             idx = word_hash % self.dimensions
-            vec[idx] += 2.0
+            vec[idx] += 10.0
+
+        # Deterministic background noise for realistic non-zero dimensional spread
+        digest = hashlib.sha256(text.strip().lower().encode('utf-8')).hexdigest()
+        seed_int = int(digest[:16], 16)
+        rng = random.Random(seed_int)
+        for i in range(self.dimensions):
+            vec[i] += rng.gauss(0, 0.05)
 
         # L2 Normalize: sqrt(sum(v_i^2)) = 1.0
         norm = math.sqrt(sum(x * x for x in vec))

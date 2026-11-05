@@ -31,7 +31,12 @@ AskDesk is a production-style, multi-tenant customer support helpdesk platform w
   - Pluggable embedding service (`MockEmbeddingService` for deterministic SDET tests, `OpenAIEmbeddingService` for production 1536-dim vectors).
   - Dual-database HNSW indexing (`SafeHnswIndex` for PostgreSQL pgvector + SQLite compatibility).
   - Document upload, chunk statistics, and atomic cascade deletion.
-- [ ] **Phase 4: RAG Retrieval Engine & Grounded AI Suggestion Service**
+- [x] **Phase 4: RAG Retrieval Engine & Grounded AI Suggestion Service**
+  - Multi-tenant cosine vector search with dual-database compatibility (Postgres `CosineDistance` + SQLite vectorized fallback).
+  - Pluggable LLM generation service (`MockLLMService` for deterministic SDET suites, `OpenAILLMService` targeting `gpt-4o-mini`).
+  - Strict bounded-context anti-hallucination guardrail with standardized fallback string.
+  - Full structured citation traceability (`AIDraftCitation` with document title, page number, relevance score, and verbatim excerpt).
+  - Human-in-the-loop review workflow (`ACCEPT` / `REJECT`) with auto-dispatching of ticket comments and ticket status progression.
 - [ ] **Phase 5: React + TypeScript Frontend Application**
 - [ ] **Phase 6: Real-Time Updates (SSE) & Rigorous SDET Testing**
 - [ ] **Phase 7: Production Containerization & Deployment**
@@ -107,3 +112,12 @@ pytest
 | `POST` | `/api/v1/documents/upload/` | Admin only | Upload `.pdf` or `.txt` file; triggers chunking & embedding |
 | `GET` | `/api/v1/documents/{id}/` | Agent / Admin | Retrieve document details with extracted snippet previews |
 | `DELETE` | `/api/v1/documents/{id}/` | Admin only | Delete document; atomically cascades all vector chunks |
+
+### RAG Retrieval & AI Suggestions (`/api/v1/tickets/` & `/api/v1/rag/`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/tickets/{id}/ai-draft/` | Agent / Admin | Triggers RAG pipeline; returns grounded draft reply with structured citations |
+| `GET` | `/api/v1/tickets/{id}/ai-draft/` | Agent / Admin | Retrieves the latest AI suggestion draft for a ticket |
+| `POST` | `/api/v1/tickets/{id}/ai-draft/review/` | Agent / Admin | Review draft (`ACCEPT`/`REJECT`); automatically dispatches formal comment on accept |
+| `GET` | `/api/v1/rag/search/?query={q}` | Agent / Admin | Direct vector similarity semantic search over tenant knowledge base chunks |
+

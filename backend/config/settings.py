@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'apps.authentication.apps.AuthenticationConfig',
     'apps.tickets.apps.TicketsConfig',
     'apps.documents.apps.DocumentsConfig',
+    'apps.rag.apps.RagConfig',
 ]
 
 MIDDLEWARE = [

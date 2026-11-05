@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/v1/auth/', include('apps.authentication.urls')),
     path('api/v1/tickets/', include('apps.tickets.urls')),
     path('api/v1/documents/', include('apps.documents.urls')),
+    path('api/v1/rag/', include('apps.rag.urls')),
 ]
 
 if settings.DEBUG:
