@@ -5,6 +5,7 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { Badge } from '../components/common/Badge';
 import { Users, UserPlus } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
 
 export const TeamPage: React.FC = () => {
   const [agents, setAgents] = useState<User[]>([]);
@@ -50,7 +51,7 @@ export const TeamPage: React.FC = () => {
       setIsModalOpen(false);
       fetchAgents();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to provision agent.');
+      setError(getErrorMessage(err, 'Failed to provision agent.'));
     } finally {
       setIsSubmitting(false);
     }

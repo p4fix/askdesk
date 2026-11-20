@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { UploadCloud, FileText, CheckCircle2 } from 'lucide-react';
+import { getErrorMessage } from '../../utils/errors';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       setTitle('');
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed.');
+      setError(getErrorMessage(err, 'Upload failed.'));
     } finally {
       setIsUploading(false);
     }

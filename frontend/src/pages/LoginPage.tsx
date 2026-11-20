@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
 import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,11 +22,7 @@ export const LoginPage: React.FC = () => {
       await login(email, password);
       navigate('/dashboard');
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Invalid credentials. Please verify your email and password.'
-      );
+      setError(getErrorMessage(err, 'Invalid credentials. Please verify your email and password.'));
     } finally {
       setIsLoading(false);
     }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
 import { Building2, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,11 +31,7 @@ export const RegisterPage: React.FC = () => {
       });
       navigate('/dashboard');
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Registration failed. Verify password strength (min 8 chars, uppercase, lowercase, special char).'
-      );
+      setError(getErrorMessage(err, 'Registration failed. Verify password strength and email address.'));
     } finally {
       setIsLoading(false);
     }

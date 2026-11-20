@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { CreateTicketRequest, TicketPriority } from '../../types/tickets';
+import { getErrorMessage } from '../../utils/errors';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       setPriority('MEDIUM');
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create ticket.');
+      setError(getErrorMessage(err, 'Failed to create ticket.'));
     } finally {
       setIsSubmitting(false);
     }
