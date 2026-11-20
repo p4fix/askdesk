@@ -8,3 +8,4 @@ urlpatterns = [
     path('tickets/<uuid:ticket_id>/draft/', AIDraftGenerateView.as_view(), name='ticket-draft'),
     path('tickets/<uuid:ticket_id>/review/', AIDraftReviewView.as_view(), name='ticket-review'),
 ]
+

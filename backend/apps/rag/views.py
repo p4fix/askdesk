@@ -136,3 +136,4 @@ class SemanticSearchView(APIView):
 
         result_serializer = SemanticSearchResultSerializer(matches, many=True)
         return Response(result_serializer.data, status=status.HTTP_200_OK)
+

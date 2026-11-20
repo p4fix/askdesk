@@ -169,3 +169,4 @@ def get_llm_service() -> BaseLLMService:
     if provider == "openai" and api_key:
         return OpenAILLMService(api_key=api_key)
     return MockLLMService()
+

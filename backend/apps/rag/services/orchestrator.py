@@ -78,3 +78,4 @@ class RAGOrchestrator:
                 AIDraftCitation.objects.bulk_create(citations)
 
         return draft
+

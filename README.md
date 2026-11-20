@@ -37,7 +37,13 @@ AskDesk is a production-style, multi-tenant customer support helpdesk platform w
   - Strict bounded-context anti-hallucination guardrail with standardized fallback string.
   - Full structured citation traceability (`AIDraftCitation` with document title, page number, relevance score, and verbatim excerpt).
   - Human-in-the-loop review workflow (`ACCEPT` / `REJECT`) with auto-dispatching of ticket comments and ticket status progression.
-- [ ] **Phase 5: React + TypeScript Frontend Application**
+- [x] **Phase 5: React + TypeScript Frontend Application**
+  - Modern React 18+ Single Page Application with TypeScript, Vite, and Tailwind CSS.
+  - Multi-tenant authentication context with JWT local storage and automatic 401 silent token refresh interceptor.
+  - Helpdesk ticket management: list with status/priority filtering, search, and creation modal.
+  - Side-by-side ticket detail workspace: threaded customer comments and internal staff notes.
+  - Human-in-the-Loop RAG suggestion panel (`AIDraftPanel`) with real-time confidence scoring, expandable citation sources, live text editing, and Accept/Reject review actions.
+  - Knowledge base document management: drag-and-drop PDF/TXT uploader and interactive vector similarity search inspector.
 - [ ] **Phase 6: Real-Time Updates (SSE) & Rigorous SDET Testing**
 - [ ] **Phase 7: Production Containerization & Deployment**
 
@@ -77,10 +83,23 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-### 4. Run Test Suite
+### 4. Start Frontend Client (React + Vite)
 ```bash
+cd frontend
+npm install
+npm run dev
+# Open http://localhost:5173
+```
+
+### 5. Run Test Suites
+```bash
+# Backend pytest suite (59 unit & integration tests)
 cd backend
 pytest
+
+# Frontend unit tests
+cd frontend
+npm test
 ```
 
 ---

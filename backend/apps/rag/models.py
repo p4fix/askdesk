@@ -124,3 +124,4 @@ class AIDraftCitation(models.Model):
 
     def __str__(self):
         return f"Citation from '{self.source_title}' (Page {self.page_number}, Score: {self.relevance_score:.2f})"
+

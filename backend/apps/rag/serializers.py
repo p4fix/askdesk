@@ -75,3 +75,4 @@ class SemanticSearchResultSerializer(serializers.Serializer):
     page_number = serializers.IntegerField()
     similarity = serializers.FloatField()
     content = serializers.CharField()
+

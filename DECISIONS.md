@@ -120,3 +120,39 @@ This document tracks foundational design choices, tradeoffs, alternatives consid
   1. **Prompt Guardrail**: System prompt strictly restricts the LLM to provide answers *only* from the supplied context chunks. When context is missing or irrelevant, LLM emits a standardized fallback message: `"I do not have enough documentation to answer this question. Please reach out to our human support team for further assistance."`
   2. **Structured Traceability (`AIDraftCitation`)**: Each draft response records foreign-key links to cited `DocumentChunk` records, along with `relevance_score`, `source_title`, `page_number`, and `cited_excerpt`.
 * **Rationale**: Eliminates guesswork for support agents by surfacing exact documentation sources and page numbers directly alongside AI draft replies.
+
+---
+
+## Decision 011: Frontend State Architecture — React Context & Axios Interceptors vs. Redux / External State Machines
+* **Date**: Phase 5
+* **Context**: Need a responsive, robust client state management architecture for authentication, active tenant sessions, and helpdesk operations without introducing unnecessary boilerplate or bundle bloat.
+* **Options Considered**:
+  1. *Redux Toolkit / Zustand*: Adds external dependency overhead and boilerplate for a dashboard whose state is primarily server-driven.
+  2. *React Context + Axios Request/Response Interceptors*: Lightweight native React state (`AuthContext`) paired with Axios interceptors that manage JWT tokens and transparent token refresh.
+* **Decision**: Adopted React Context with Axios Interceptors.
+* **Rationale**:
+  - Encapsulates authentication session (`user`, `organization`, `role`) cleanly across the component tree.
+  - Axios interceptor automatically injects `Authorization: Bearer <token>` into outgoing requests and traps HTTP 401s to perform automated silent refresh using `refresh` tokens without user interruption.
+
+---
+
+## Decision 012: Human-in-the-Loop RAG UI & Citation Verification Interface
+* **Date**: Phase 5
+* **Context**: Support agents need to quickly evaluate AI-generated draft responses, review underlying documentation evidence, and edit text before approval.
+* **Options Considered**:
+  1. *Modal Popups*: Disrupts context; agents cannot compare customer inquiry with the suggested answer.
+  2. *Side-by-Side Split Workspace (`TicketTimeline` + `AIDraftPanel`)*: Places the customer conversation thread on the left and the RAG suggestion panel on the right.
+* **Decision**: Adopted a unified side-by-side split workspace (`TicketDetailPage`).
+* **Rationale**:
+  - Provides instant visibility into customer messages alongside AI-suggested answers and expandable citation cards (`[Doc: <title>, Page: <n>]`).
+  - Allows seamless one-click toggle into inline edit mode (`final_edited_reply`), internal note checkboxes, and instant accept/reject dispatching.
+
+---
+
+## Decision 013: Vite + Tailwind CSS Architecture & Token Auto-Refresh Interceptor
+* **Date**: Phase 5
+* **Context**: Fast local development build cycles with zero configuration friction and modern CSS utility styling.
+* **Decision**: Configured Vite with React SWC/Babel plugin and Tailwind CSS with custom branding color tokens (`brand-50` through `brand-950`).
+* **Rationale**:
+  - Vite dev server provides sub-100ms Hot Module Replacement (HMR).
+  - Reverse proxy configuration (`/api` -> `http://localhost:8000`) prevents cross-origin preflight complexity during local development.
