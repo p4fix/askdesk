@@ -55,6 +55,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         # Include serialized user info in login HTTP response
         data['user'] = UserSerializer(self.user).data
+        data['tokens'] = {
+            'access': data['access'],
+            'refresh': data['refresh'],
+        }
         return data
 
 
@@ -109,6 +113,10 @@ class RegisterOrganizationSerializer(serializers.Serializer):
             'user': UserSerializer(user).data,
             'access': str(refresh.access_token),
             'refresh': str(refresh),
+            'tokens': {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            },
         }
 
 

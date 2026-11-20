@@ -44,13 +44,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchUser();
   }, []);
 
+  const saveSession = (response: { access?: string; refresh?: string; tokens?: { access: string; refresh: string }; user: User }) => {
+    const accessToken = response.access || response.tokens?.access;
+    const refreshToken = response.refresh || response.tokens?.refresh;
+    if (accessToken) {
+      localStorage.setItem('askdesk_access_token', accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem('askdesk_refresh_token', refreshToken);
+    }
+    setUser(response.user);
+  };
+
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
     try {
       const response = await authService.login(email, pass);
-      localStorage.setItem('askdesk_access_token', response.tokens.access);
-      localStorage.setItem('askdesk_refresh_token', response.tokens.refresh);
-      setUser(response.user);
+      saveSession(response);
     } finally {
       setIsLoading(false);
     }
@@ -60,9 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       const response = await authService.register(data);
-      localStorage.setItem('askdesk_access_token', response.tokens.access);
-      localStorage.setItem('askdesk_refresh_token', response.tokens.refresh);
-      setUser(response.user);
+      saveSession(response);
     } finally {
       setIsLoading(false);
     }

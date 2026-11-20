@@ -22,7 +22,9 @@ export interface AuthTokens {
 }
 
 export interface LoginResponse {
-  tokens: AuthTokens;
+  tokens?: AuthTokens;
+  access?: string;
+  refresh?: string;
   user: User;
 }
 
