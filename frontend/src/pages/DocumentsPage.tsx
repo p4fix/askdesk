@@ -6,7 +6,6 @@ import { DocumentUploadModal } from '../components/documents/DocumentUploadModal
 import { Button } from '../components/common/Button';
 import { EmptyState } from '../components/common/EmptyState';
 import {
-  FileText,
   Upload,
   BookOpen,
   Database,

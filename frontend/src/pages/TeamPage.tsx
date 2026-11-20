@@ -4,7 +4,7 @@ import { User } from '../types/auth';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { Badge } from '../components/common/Badge';
-import { Users, UserPlus, Mail, Lock, User as UserIcon, Shield } from 'lucide-react';
+import { Users, UserPlus } from 'lucide-react';
 
 export const TeamPage: React.FC = () => {
   const [agents, setAgents] = useState<User[]>([]);

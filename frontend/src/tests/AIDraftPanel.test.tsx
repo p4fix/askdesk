@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { ConfidenceBadge } from '../components/rag/ConfidenceBadge';
 import { CitationCard } from '../components/rag/CitationCard';
 import { AIDraftCitation } from '../types/rag';

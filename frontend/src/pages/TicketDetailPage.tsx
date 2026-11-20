@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ticketService } from '../../services/ticketService';
-import { authService } from '../../services/authService';
-import { Ticket, TicketStatus, TicketPriority } from '../../types/tickets';
-import { User } from '../../types/auth';
-import { StatusBadge, PriorityBadge } from '../common/Badge';
-import { Button } from '../common/Button';
-import { TicketTimeline } from '../tickets/TicketTimeline';
-import { AIDraftPanel } from '../rag/AIDraftPanel';
+import { ticketService } from '../services/ticketService';
+import { authService } from '../services/authService';
+import { Ticket, TicketStatus, TicketPriority } from '../types/tickets';
+import { User } from '../types/auth';
+import { StatusBadge, PriorityBadge } from '../components/common/Badge';
+import { Button } from '../components/common/Button';
+import { TicketTimeline } from '../components/tickets/TicketTimeline';
+import { AIDraftPanel } from '../components/rag/AIDraftPanel';
 import {
   ArrowLeft,
   Calendar,
@@ -53,7 +53,7 @@ export const TicketDetailPage: React.FC = () => {
     setIsUpdating(true);
     try {
       const updated = await ticketService.updateTicket(ticket.id, { status: newStatus });
-      setTicket((prev) => (prev ? { ...prev, status: updated.status } : null));
+      setTicket((prev: Ticket | null) => (prev ? { ...prev, status: updated.status } : null));
     } finally {
       setIsUpdating(false);
     }
@@ -64,7 +64,7 @@ export const TicketDetailPage: React.FC = () => {
     setIsUpdating(true);
     try {
       const updated = await ticketService.updateTicket(ticket.id, { priority: newPriority });
-      setTicket((prev) => (prev ? { ...prev, priority: updated.priority } : null));
+      setTicket((prev: Ticket | null) => (prev ? { ...prev, priority: updated.priority } : null));
     } finally {
       setIsUpdating(false);
     }
@@ -77,7 +77,7 @@ export const TicketDetailPage: React.FC = () => {
       const updated = await ticketService.updateTicket(ticket.id, {
         assigned_to: agentId || null,
       });
-      setTicket((prev) => (prev ? { ...prev, assigned_to: updated.assigned_to } : null));
+      setTicket((prev: Ticket | null) => (prev ? { ...prev, assigned_to: updated.assigned_to } : null));
     } finally {
       setIsUpdating(false);
     }
@@ -89,7 +89,7 @@ export const TicketDetailPage: React.FC = () => {
       body,
       is_internal_note: isInternal,
     });
-    setTicket((prev) =>
+    setTicket((prev: Ticket | null) =>
       prev
         ? {
             ...prev,
