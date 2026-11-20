@@ -47,6 +47,8 @@ export const TicketsPage: React.FC = () => {
     });
   };
 
+  const safeTickets = Array.isArray(tickets) ? tickets : [];
+
   return (
     <div className="space-y-6">
       {/* Header and Action */}
@@ -121,7 +123,7 @@ export const TicketsPage: React.FC = () => {
         <div className="text-center py-16 text-slate-400 text-sm">
           Loading ticket queue...
         </div>
-      ) : tickets.length === 0 ? (
+      ) : safeTickets.length === 0 ? (
         <EmptyState
           icon={<LifeBuoy className="w-6 h-6" />}
           title="No support tickets found"
@@ -134,7 +136,7 @@ export const TicketsPage: React.FC = () => {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {tickets.map((ticket) => (
+          {safeTickets.map((ticket) => (
             <TicketCard key={ticket.id} ticket={ticket} />
           ))}
         </div>

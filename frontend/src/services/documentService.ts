@@ -3,8 +3,15 @@ import { Document } from '../types/documents';
 
 export const documentService = {
   async listDocuments(): Promise<Document[]> {
-    const response = await apiClient.get<Document[]>('/documents/');
-    return response.data;
+    const response = await apiClient.get<Document[] | { results: Document[] }>('/documents/');
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data && typeof data === 'object' && Array.isArray((data as { results: Document[] }).results)) {
+      return (data as { results: Document[] }).results;
+    }
+    return [];
   },
 
   async getDocument(id: string): Promise<Document> {

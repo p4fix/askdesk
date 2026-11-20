@@ -23,7 +23,9 @@ export const TeamPage: React.FC = () => {
     setLoading(true);
     try {
       const data = await authService.listAgents();
-      setAgents(data);
+      setAgents(Array.isArray(data) ? data : []);
+    } catch {
+      setAgents([]);
     } finally {
       setLoading(false);
     }

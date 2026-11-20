@@ -13,9 +13,10 @@ export const useDocuments = () => {
     setError(null);
     try {
       const data = await documentService.listDocuments();
-      setDocuments(data);
+      setDocuments(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch knowledge base documents');
+      setDocuments([]);
     } finally {
       setLoading(false);
     }

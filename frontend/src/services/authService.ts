@@ -32,8 +32,15 @@ export const authService = {
   },
 
   async listAgents(): Promise<User[]> {
-    const response = await apiClient.get<User[]>('/auth/users/');
-    return response.data;
+    const response = await apiClient.get<User[] | { results: User[] }>('/auth/users/');
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data && typeof data === 'object' && Array.isArray((data as { results: User[] }).results)) {
+      return (data as { results: User[] }).results;
+    }
+    return [];
   },
 
   async createAgent(data: CreateAgentRequest): Promise<User> {

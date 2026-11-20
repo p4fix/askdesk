@@ -36,7 +36,7 @@ export const TicketDetailPage: React.FC = () => {
         authService.listAgents().catch(() => []),
       ]);
       setTicket(ticketData);
-      setAgents(agentsData);
+      setAgents(Array.isArray(agentsData) ? agentsData : []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load ticket.');
     } finally {

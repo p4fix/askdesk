@@ -18,12 +18,15 @@ export const DashboardPage: React.FC = () => {
   const { tickets, loading: ticketsLoading } = useTickets();
   const { documents, loading: docsLoading } = useDocuments();
 
-  const openTickets = tickets.filter((t) => t.status === 'OPEN');
-  const inProgressTickets = tickets.filter((t) => t.status === 'IN_PROGRESS');
-  const urgentTickets = tickets.filter(
+  const safeTickets = Array.isArray(tickets) ? tickets : [];
+  const safeDocuments = Array.isArray(documents) ? documents : [];
+
+  const openTickets = safeTickets.filter((t) => t.status === 'OPEN');
+  const inProgressTickets = safeTickets.filter((t) => t.status === 'IN_PROGRESS');
+  const urgentTickets = safeTickets.filter(
     (t) => (t.priority === 'URGENT' || t.priority === 'HIGH') && t.status !== 'CLOSED' && t.status !== 'RESOLVED'
   );
-  const resolvedCount = tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+  const resolvedCount = safeTickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
 
   return (
     <div className="space-y-8">
@@ -34,7 +37,7 @@ export const DashboardPage: React.FC = () => {
             {organization?.name || 'Enterprise'} Tenant
           </span>
           <h1 className="text-2xl md:text-3xl font-bold mt-2 tracking-tight">
-            Welcome back, {user?.first_name}!
+            Welcome back, {user?.first_name || user?.email || 'Admin'}!
           </h1>
           <p className="text-brand-100 text-sm mt-1 max-w-xl">
             AskDesk RAG Helpdesk is actively monitoring incoming support queues with factual vector grounding.
@@ -102,7 +105,7 @@ export const DashboardPage: React.FC = () => {
               to="/tickets"
               className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
             >
-              See all ({tickets.length})
+              See all ({safeTickets.length})
             </Link>
           </div>
 
@@ -110,13 +113,13 @@ export const DashboardPage: React.FC = () => {
             <div className="text-center py-10 text-slate-400 text-sm">
               Loading recent tickets...
             </div>
-          ) : tickets.length === 0 ? (
+          ) : safeTickets.length === 0 ? (
             <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-500 text-sm">
               No tickets submitted yet. Create your first support ticket to test the workflow.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tickets.slice(0, 4).map((ticket) => (
+              {safeTickets.slice(0, 4).map((ticket) => (
                 <TicketCard key={ticket.id} ticket={ticket} />
               ))}
             </div>
@@ -141,11 +144,11 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div>
                 <div className="text-sm font-bold text-slate-900">
-                  {docsLoading ? '...' : documents.length} Indexed Document{documents.length !== 1 ? 's' : ''}
+                  {docsLoading ? '...' : safeDocuments.length} Indexed Document{safeDocuments.length !== 1 ? 's' : ''}
                 </div>
                 <div className="text-xs text-slate-500">
                   Total Chunks:{' '}
-                  {documents.reduce((acc, d) => acc + (d.chunks_count || 0), 0)}
+                  {safeDocuments.reduce((acc, d) => acc + (d.chunks_count || 0), 0)}
                 </div>
               </div>
             </div>

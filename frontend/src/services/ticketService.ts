@@ -16,8 +16,15 @@ export interface TicketFilterParams {
 
 export const ticketService = {
   async listTickets(params?: TicketFilterParams): Promise<Ticket[]> {
-    const response = await apiClient.get<Ticket[]>('/tickets/', { params });
-    return response.data;
+    const response = await apiClient.get<Ticket[] | { results: Ticket[] }>('/tickets/', { params });
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (data && typeof data === 'object' && Array.isArray((data as { results: Ticket[] }).results)) {
+      return (data as { results: Ticket[] }).results;
+    }
+    return [];
   },
 
   async getTicket(id: string): Promise<Ticket> {

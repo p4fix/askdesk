@@ -13,9 +13,10 @@ export const useTickets = (initialFilters?: TicketFilterParams) => {
     setError(null);
     try {
       const data = await ticketService.listTickets(filters);
-      setTickets(data);
+      setTickets(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tickets');
+      setTickets([]);
     } finally {
       setLoading(false);
     }

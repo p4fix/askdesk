@@ -50,7 +50,8 @@ export const DocumentsPage: React.FC = () => {
     setSearchResults(null);
   };
 
-  const totalChunks = documents.reduce((acc, d) => acc + (d.chunks_count || 0), 0);
+  const safeDocs = Array.isArray(documents) ? documents : [];
+  const totalChunks = safeDocs.reduce((acc, d) => acc + (d.chunks_count || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -154,7 +155,7 @@ export const DocumentsPage: React.FC = () => {
         <div className="text-center py-16 text-slate-400 text-sm">
           Loading knowledge base documents...
         </div>
-      ) : documents.length === 0 ? (
+      ) : safeDocs.length === 0 ? (
         <EmptyState
           icon={<BookOpen className="w-6 h-6" />}
           title="Knowledge base is empty"
@@ -169,7 +170,7 @@ export const DocumentsPage: React.FC = () => {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {documents.map((doc) => (
+          {safeDocs.map((doc) => (
             <DocumentCard
               key={doc.id}
               document={doc}
