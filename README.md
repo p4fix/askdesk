@@ -50,7 +50,13 @@ AskDesk is a production-style, multi-tenant customer support helpdesk platform w
   - Live client synchronization for `ticket.created`, `ticket.updated`, `comment.added`, and `rag.draft_reviewed`.
   - Frontend `useRealtimeStream` hook with browser `EventSource` auto-reconnection and query parameter JWT authorization.
   - Comprehensive 15-test automated SDET suite covering multi-tenant eavesdropping prevention, cross-tenant mutation defense, and high-concurrency event broadcasting.
-- [ ] **Phase 7: Production Containerization & Deployment**
+- [x] **Phase 7: Production Containerization & Deployment**
+  - Multi-stage, security-hardened `Dockerfile` for Django backend with non-root user `askdesk` and Gunicorn WSGI runtime.
+  - Automated database readiness probe and migration lifecycle hook (`entrypoint.sh`).
+  - Multi-stage `Dockerfile` for React SPA with Node 20 build and Nginx 1.27 Alpine production runtime.
+  - Nginx reverse proxy configuration with SSE real-time streaming optimization (`proxy_buffering off;`, extended timeout).
+  - Production `docker-compose.yml` and `docker-compose.prod.yml` orchestrating PostgreSQL with `pgvector`, Django, and Nginx.
+  - Automated container healthcheck endpoints (`GET /api/v1/health/` and `GET /health/`).
 
 ---
 
@@ -98,7 +104,7 @@ npm run dev
 
 ### 5. Run Test Suites
 ```bash
-# Backend pytest suite (59 unit & integration tests)
+# Backend pytest suite (76 unit, integration, and SDET tests)
 cd backend
 pytest
 
@@ -107,9 +113,29 @@ cd frontend
 npm test
 ```
 
+### 6. Production Deployment with Docker Compose
+To deploy the entire production stack (PostgreSQL 16 + pgvector, Django + Gunicorn, and Nginx + React SPA) with a single command:
+```bash
+# Copy and customize production environment configuration
+cp .env.production.example .env
+
+# Build and start all multi-container services in detached mode
+docker compose up -d --build
+
+# Verify healthy status across all containers
+docker compose ps
+```
+The application will be accessible at `http://localhost/` (or port 80/443 in production).
+
 ---
 
 ## 📡 REST API Reference
+
+### System Health & Observability (`/api/v1/health/`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/health/` | Public | Root container healthcheck probe |
+| `GET` | `/api/v1/health/` | Public | Production healthcheck verifying database and pgvector status |
 
 ### Authentication (`/api/v1/auth/`)
 | Method | Endpoint | Access | Description |
@@ -120,11 +146,12 @@ npm test
 | `GET` | `/api/v1/auth/me/` | Authenticated | Fetch current user profile and tenant metadata |
 | `POST` | `/api/v1/auth/users/` | Admin only | Provision/list support agents in organization |
 
-### Ticket Management (`/api/v1/tickets/`)
+### Ticket Management & Real-Time Streams (`/api/v1/tickets/`)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/tickets/` | Agent / Admin | List tickets (filters: `status`, `priority`, `assigned_to`, `search`) |
 | `POST` | `/api/v1/tickets/` | Agent / Admin | Submit a new customer support ticket |
+| `GET` | `/api/v1/tickets/stream/` | Agent / Admin | Real-Time Server-Sent Events (SSE) stream for live queue updates |
 | `GET` | `/api/v1/tickets/{id}/` | Agent / Admin | Retrieve full ticket detail with conversation history |
 | `PATCH` | `/api/v1/tickets/{id}/` | Agent / Admin | Update status, priority, or assignee |
 | `POST` | `/api/v1/tickets/{id}/comments/` | Agent / Admin | Add public customer reply or internal staff note |

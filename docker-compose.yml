@@ -1,10 +1,13 @@
 version: '3.8'
 
 services:
+  # -------------------------------------------------------------
+  # PostgreSQL 16 with pgvector Extension
+  # -------------------------------------------------------------
   db:
     image: pgvector/pgvector:pg16
     container_name: askdesk_postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-askdesk_db}
       POSTGRES_USER: ${DB_USER:-askdesk_user}
@@ -18,31 +21,69 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - askdesk_net
 
+  # -------------------------------------------------------------
+  # Django REST Framework + Gunicorn Backend API
+  # -------------------------------------------------------------
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: askdesk_backend
-    restart: always
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./backend:/app
-    ports:
-      - "8000:8000"
+    restart: unless-stopped
     environment:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=${DB_NAME:-askdesk_db}
       - DB_USER=${DB_USER:-askdesk_user}
       - DB_PASSWORD=${DB_PASSWORD:-askdesk_password}
-      - SECRET_KEY=${SECRET_KEY:-django-insecure-askdesk-dev-key-change-in-production}
-      - DEBUG=${DEBUG:-True}
-      - ALLOWED_HOSTS=localhost,127.0.0.1,backend,0.0.0.0
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-askdesk-change-in-production}
+      - DEBUG=${DEBUG:-False}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend,frontend,0.0.0.0
+      - CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1,http://localhost:5173,http://localhost:80
+      - USE_SQLITE=False
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - EMBEDDING_SERVICE=${EMBEDDING_SERVICE:-mock}
+      - LLM_SERVICE=${LLM_SERVICE:-mock}
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    ports:
+      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - askdesk_net
+
+  # -------------------------------------------------------------
+  # React SPA + Nginx Reverse Proxy (SSE Streaming Enabled)
+  # -------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: askdesk_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - askdesk_net
 
 volumes:
   pgdata:
+    driver: local
+  media_data:
+    driver: local
+  static_data:
+    driver: local
 
+networks:
+  askdesk_net:
+    driver: bridge

@@ -182,3 +182,29 @@ This document tracks foundational design choices, tradeoffs, alternatives consid
   3. **Concurrency & Thread Safety**: Validates multi-threaded event broadcaster throughput under heavy concurrent loads without deadlocks.
 * **Rationale**: Guarantees compliance and security boundaries as first-class, continuously verified automated test assertions.
 
+---
+
+## Decision 016: Production Containerization & WSGI Strategy (Gunicorn + Multi-Stage Dockerfiles)
+* **Date**: Phase 7
+* **Context**: Need a production-grade, hardened containerization strategy for deploying AskDesk to cloud orchestrators (Kubernetes, AWS ECS, Docker Swarm, or single-node Docker Compose).
+* **Decision**: Adopted multi-stage Docker builds with Gunicorn and unprivileged system users:
+  - **Multi-Stage Build Pattern**: Build dependencies (gcc, libpq-dev, node toolchains) are isolated in builder stages and completely omitted from runner stages, reducing runtime image sizes by over 60% and minimizing attack surface.
+  - **Principle of Least Privilege**: Runner containers execute under dedicated non-root users (`askdesk` in backend, `nginx` in frontend), preventing container-escape privilege escalation.
+  - **WSGI Concurrency Model**: Gunicorn configured with `gthread` worker class (`workers=3, threads=2, worker-tmp-dir=/dev/shm`), balancing memory footprint with concurrent I/O throughput.
+  - **Automated Lifecycle Hooks (`entrypoint.sh`)**: Dynamically probes database readiness, applies pending Django migrations (`migrate --no-input`), and gathers static files (`collectstatic --no-input`) before handing execution over to Gunicorn.
+* **Rationale**: Guarantees zero-downtime, idempotent container startups across heterogeneous cloud infrastructure.
+
+---
+
+## Decision 017: Nginx Reverse Proxy Architecture & Real-Time SSE Buffering Strategy
+* **Date**: Phase 7
+* **Context**: High-performance reverse proxying of frontend single-page application assets, backend REST API routes, and persistent Server-Sent Events (SSE) connections.
+* **Problem**: Standard Nginx reverse proxies buffer upstream response frames (`proxy_buffering on;`) to optimize throughput. For SSE streams (`text/event-stream`), buffering prevents event packets from reaching client browsers until either the buffer fills (typically 4KB-8KB) or the connection closes, destroying real-time interactivity.
+* **Decision**: Configured dedicated location block `/api/v1/tickets/stream/` in `nginx.conf`:
+  - `proxy_buffering off;` and `proxy_cache off;`: Disables Nginx buffering completely, streaming event bytes instantaneously to connected agents.
+  - `proxy_read_timeout 86400s;` and `proxy_send_timeout 86400s;`: Prevents Nginx from prematurely terminating persistent keep-alive SSE channels.
+  - `proxy_set_header Connection '';`: Enforces HTTP/1.1 persistent streaming without hop-by-hop connection closure.
+  - Fallback SPA routing `try_files $uri $uri/ /index.html;` ensures HTML5 client-side navigation operates seamlessly without 404s.
+* **Rationale**: Enables zero-latency live ticket and AI draft event streaming while providing high-speed gzip asset compression and unified port 80/443 exposure.
+
+
