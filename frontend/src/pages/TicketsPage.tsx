@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTickets } from '../hooks/useTickets';
+import { useRealtimeStream } from '../hooks/useRealtimeStream';
 import { TicketCard } from '../components/tickets/TicketCard';
 import { CreateTicketModal } from '../components/tickets/CreateTicketModal';
 import { Button } from '../components/common/Button';
@@ -25,6 +26,12 @@ export const TicketsPage: React.FC = () => {
     createTicket,
     refreshTickets,
   } = useTickets();
+
+  // Instant real-time queue refresh when tickets are created or updated anywhere in the tenant
+  useRealtimeStream({
+    onTicketCreated: () => refreshTickets(),
+    onTicketUpdated: () => refreshTickets(),
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTickets } from '../hooks/useTickets';
 import { useDocuments } from '../hooks/useDocuments';
+import { useRealtimeStream } from '../hooks/useRealtimeStream';
 import { TicketCard } from '../components/tickets/TicketCard';
 import {
   LifeBuoy,
@@ -15,8 +16,15 @@ import { Link } from 'react-router-dom';
 
 export const DashboardPage: React.FC = () => {
   const { user, organization } = useAuth();
-  const { tickets, loading: ticketsLoading } = useTickets();
+  const { tickets, loading: ticketsLoading, refreshTickets } = useTickets();
   const { documents, loading: docsLoading } = useDocuments();
+
+  // Live real-time stream keeps dashboard counters and recent activity synchronized
+  useRealtimeStream({
+    onTicketCreated: () => refreshTickets(),
+    onTicketUpdated: () => refreshTickets(),
+    onCommentAdded: () => refreshTickets(),
+  });
 
   const safeTickets = Array.isArray(tickets) ? tickets : [];
   const safeDocuments = Array.isArray(documents) ? documents : [];

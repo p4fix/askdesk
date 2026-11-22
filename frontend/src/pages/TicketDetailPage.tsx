@@ -8,6 +8,7 @@ import { StatusBadge, PriorityBadge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { TicketTimeline } from '../components/tickets/TicketTimeline';
 import { AIDraftPanel } from '../components/rag/AIDraftPanel';
+import { useRealtimeStream } from '../hooks/useRealtimeStream';
 import {
   ArrowLeft,
   Calendar,
@@ -47,6 +48,33 @@ export const TicketDetailPage: React.FC = () => {
   useEffect(() => {
     fetchTicketData();
   }, [fetchTicketData]);
+
+  // Live SSE real-time stream subscription for instantaneous updates
+  useRealtimeStream({
+    onTicketUpdated: (event) => {
+      if (id && event.id === id) {
+        setTicket((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: (event.status as TicketStatus) || prev.status,
+                priority: (event.priority as TicketPriority) || prev.priority,
+              }
+            : null
+        );
+      }
+    },
+    onCommentAdded: (event) => {
+      if (id && event.ticket_id === id) {
+        fetchTicketData();
+      }
+    },
+    onDraftReviewed: (event) => {
+      if (id && event.ticket_id === id) {
+        fetchTicketData();
+      }
+    },
+  });
 
   const handleStatusChange = async (newStatus: TicketStatus) => {
     if (!ticket) return;

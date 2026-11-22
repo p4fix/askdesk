@@ -4,6 +4,7 @@ from rest_framework import filters, generics, permissions, status
 from rest_framework.response import Response
 
 from apps.authentication.permissions import IsOrgMember
+from apps.tickets.events import event_broadcaster
 from apps.tickets.models import Ticket, TicketComment, TicketPriority, TicketStatus
 from apps.tickets.serializers import (
     TicketCommentSerializer,
@@ -62,6 +63,19 @@ class TicketListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ticket = serializer.save()
+        event_broadcaster.broadcast(
+            str(ticket.organization.id),
+            'ticket.created',
+            {
+                'id': str(ticket.id),
+                'title': ticket.title,
+                'description': ticket.description,
+                'status': ticket.status,
+                'priority': ticket.priority,
+                'created_by': ticket.created_by.email,
+                'created_at': ticket.created_at.isoformat(),
+            },
+        )
         # Return full detail representation on creation
         detail_serializer = TicketDetailSerializer(ticket, context=self.get_serializer_context())
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
@@ -94,6 +108,18 @@ class TicketDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         updated_ticket = serializer.save()
+        event_broadcaster.broadcast(
+            str(updated_ticket.organization.id),
+            'ticket.updated',
+            {
+                'id': str(updated_ticket.id),
+                'title': updated_ticket.title,
+                'status': updated_ticket.status,
+                'priority': updated_ticket.priority,
+                'assigned_to': updated_ticket.assigned_to.email if updated_ticket.assigned_to else None,
+                'updated_at': updated_ticket.updated_at.isoformat(),
+            },
+        )
 
         # Re-fetch with annotations & prefetch for response representation
         refreshed = (
@@ -131,5 +157,18 @@ class TicketCommentListCreateView(generics.ListCreateAPIView):
         return context
 
     def perform_create(self, serializer):
-        serializer.save()
+        comment = serializer.save()
+        event_broadcaster.broadcast(
+            str(comment.ticket.organization.id),
+            'comment.added',
+            {
+                'id': str(comment.id),
+                'ticket_id': str(comment.ticket.id),
+                'author': comment.author.email,
+                'author_name': comment.author.full_name,
+                'body': comment.body,
+                'is_internal_note': comment.is_internal_note,
+                'created_at': comment.created_at.isoformat(),
+            },
+        )
 

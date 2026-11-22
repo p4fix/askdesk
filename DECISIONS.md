@@ -156,3 +156,29 @@ This document tracks foundational design choices, tradeoffs, alternatives consid
 * **Rationale**:
   - Vite dev server provides sub-100ms Hot Module Replacement (HMR).
   - Reverse proxy configuration (`/api` -> `http://localhost:8000`) prevents cross-origin preflight complexity during local development.
+
+---
+
+## Decision 014: Real-Time Communication Architecture — Server-Sent Events (SSE) vs. WebSockets
+* **Date**: Phase 6
+* **Context**: Support agents need real-time queue visibility (new tickets, state changes, incoming comments, AI draft generation) across active tenant sessions without manual browser refreshing.
+* **Options Considered**:
+  1. *WebSockets (`django-channels` / ASGI + Redis)*: Full-duplex communication, but introduces heavyweight ASGI configuration, Redis pub/sub broker operational requirements, stateful connection reconnection complexity, and corporate firewall/proxy traversal issues.
+  2. *Server-Sent Events (SSE) (`text/event-stream` via `StreamingHttpResponse`)*: Monodirectional HTTP streaming from server to client with built-in browser reconnection, standard HTTP proxy compatibility, zero Redis broker dependency for single-process deployments, and query-param token authorization.
+* **Decision**: Adopted Server-Sent Events (SSE) with `TenantEventBroadcaster`.
+* **Rationale**:
+  - Client-to-server operations (creating tickets, adding comments, accepting drafts) already execute over robust, idempotent REST API endpoints. Real-time updates only require unidirectional server-to-client notifications.
+  - Native browser `EventSource` handles connection maintenance and automatic backoff reconnection out of the box.
+  - Thread-safe `TenantEventBroadcaster` partitions subscriber queues strictly by tenant `organization_id`, guaranteeing zero cross-tenant event leakage.
+
+---
+
+## Decision 015: SDET Multi-Tenant Security & Resiliency Test Strategy
+* **Date**: Phase 6
+* **Context**: A multi-tenant helpdesk with RAG and live event streaming requires mathematical proof of tenant data isolation under edge cases, unauthorized cross-tenant mutations, and concurrent traffic.
+* **Decision**: Created dedicated automated SDET test suite (`backend/apps/tickets/tests/test_sdet_suite.py`):
+  1. **Cross-Tenant Eavesdropping Defense**: Proves that subscriber queues in Tenant B receive zero event payloads when events occur in Tenant A.
+  2. **Cross-Tenant Mutation Defense**: Proves that assigning tickets to foreign tenant agents is rejected with 400 Bad Request, and querying or posting comments to foreign tickets strictly returns 404 Not Found.
+  3. **Concurrency & Thread Safety**: Validates multi-threaded event broadcaster throughput under heavy concurrent loads without deadlocks.
+* **Rationale**: Guarantees compliance and security boundaries as first-class, continuously verified automated test assertions.
+

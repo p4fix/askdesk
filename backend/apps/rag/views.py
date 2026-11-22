@@ -14,6 +14,7 @@ from apps.rag.serializers import (
 )
 from apps.rag.services.orchestrator import RAGOrchestrator
 from apps.rag.services.retrieval import VectorSearchService
+from apps.tickets.events import event_broadcaster
 from apps.tickets.models import Ticket, TicketComment, TicketStatus
 
 class AIDraftGenerateView(APIView):
@@ -89,23 +90,59 @@ class AIDraftReviewView(APIView):
             draft.save(update_fields=['status', 'final_edited_reply', 'reviewed_by', 'reviewed_at'])
 
             # Automatically dispatch as a formal ticket comment
-            TicketComment.objects.create(
+            comment = TicketComment.objects.create(
                 ticket=ticket,
                 author=request.user,
                 body=final_text,
                 is_internal_note=is_internal_note
+            )
+            event_broadcaster.broadcast(
+                str(ticket.organization.id),
+                'comment.added',
+                {
+                    'id': str(comment.id),
+                    'ticket_id': str(ticket.id),
+                    'author': comment.author.email,
+                    'author_name': comment.author.full_name,
+                    'body': comment.body,
+                    'is_internal_note': comment.is_internal_note,
+                    'created_at': comment.created_at.isoformat(),
+                },
             )
 
             # Transition ticket from OPEN to IN_PROGRESS upon initial response
             if ticket.status == TicketStatus.OPEN:
                 ticket.status = TicketStatus.IN_PROGRESS
                 ticket.save(update_fields=['status', 'updated_at'])
+                event_broadcaster.broadcast(
+                    str(ticket.organization.id),
+                    'ticket.updated',
+                    {
+                        'id': str(ticket.id),
+                        'title': ticket.title,
+                        'status': ticket.status,
+                        'priority': ticket.priority,
+                        'assigned_to': ticket.assigned_to.email if ticket.assigned_to else None,
+                        'updated_at': ticket.updated_at.isoformat(),
+                    },
+                )
 
         elif action == 'REJECT':
             draft.status = AIDraftStatus.REJECTED
             draft.reviewed_by = request.user
             draft.reviewed_at = timezone.now()
             draft.save(update_fields=['status', 'reviewed_by', 'reviewed_at'])
+
+        event_broadcaster.broadcast(
+            str(ticket.organization.id),
+            'rag.draft_reviewed',
+            {
+                'draft_id': str(draft.id),
+                'ticket_id': str(ticket.id),
+                'action': action,
+                'reviewed_by': request.user.email,
+            },
+        )
 
         response_serializer = AIDraftResponseSerializer(draft)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
